@@ -1,71 +1,26 @@
 # Adisearch 🔍
 
-> Semantic search engine with fuzzy clustering and intelligent cache on 20 Newsgroups
+![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi)
+![Flask](https://img.shields.io/badge/Flask-Web_UI-black?style=for-the-badge&logo=flask)
+![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-orange?style=for-the-badge&logo=databricks)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Embeddings-yellow?style=for-the-badge&logo=huggingface)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker)
+![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-## Dataset
+> **Semantic search engine** with fuzzy clustering and intelligent semantic cache, built on the 20 Newsgroups corpus.
 
-The corpus used in this project was provided by **Trademarkia** as part of an AI/ML Engineer assignment.
+---
 
-It is based on the classic **20 Newsgroups** dataset and is required to run the ingestion and clustering pipeline.
+## 📖 Executive Summary
 
-📥 **[Download data.zip from Google Drive](https://drive.google.com/drive/folders/1TjK4mT0mAMZjubitk87GpzoTwVeJz7dc?usp=drive_link)**
+**Adisearch** is a production-grade semantic search system designed to retrieve topically relevant documents even when exact vocabulary doesn't match. It combines dense vector embeddings, persistent vector storage, and a cluster-indexed semantic cache to deliver fast, intelligent search over a large document corpus.
 
-After downloading:
+The system bridges the vocabulary gap between modern queries and a 1990s Usenet corpus — searching _"best GPU"_ correctly retrieves posts about _"video cards"_ — demonstrating how semantic embeddings outperform keyword-based retrieval.
 
-1. Extract `data.zip`
-2. Place the resulting `data/` folder in the root of the project directory
+---
 
-```
-Adisearch/
-├── data/          ← paste extracted folder here
-│   ├── 20_newsgroups/
-│   └── mini_newsgroups/
-```
-
-> **Note:** The `data/` folder is not included in this repository. You must download it separately using the link above before running any scripts.
-
-## Project Structure
-
-```
-Adisearch/
-├── data/                     ← 20 Newsgroups corpus
-├── notebooks/                ← Exploration and clustering analysis
-├── src/                      ← Core modules
-│   ├── embedder.py
-│   ├── vector_store.py
-│   ├── fuzzy_clustering.py
-│   ├── semantic_cache.py
-│   └── search_engine.py
-│
-├── api/                      ← FastAPI backend (semantic search API)
-│   └── main.py
-│
-├── web/                      ← Flask frontend (web interface)
-│   ├── app.py
-│   └── templates/
-│       └── index.html
-│
-├── scripts/                  ← One-time data processing
-│   ├── ingest.py
-│   └── cluster.py
-│
-├── tests/                    ← Unit tests
-│
-├── chroma_db/                ← Persistent vector database
-├── cache_data/               ← Persistent semantic cache
-├── cluster_model/            ← Saved clustering pipeline
-│
-├── Dockerfile                ← Container build instructions
-├── docker-compose.yml        ← Multi-service container orchestration
-├── start.sh                  ← Startup script for running backend + frontend
-│
-├── requirements.txt
-└── README.md
-```
-
-## System Architecture
-
-The system consists of three layers:
+## 🏗 System Architecture
 
 ```
 User Browser
@@ -79,43 +34,115 @@ FastAPI Backend (port 8000)
      ▼
 Semantic Search Pipeline
      │
-     ├── SentenceTransformer embeddings
-     ├── ChromaDB vector search
-     ├── Fuzzy C-Means clustering
-     └── Cluster-indexed semantic cache
+     ├── SentenceTransformer Embeddings  (all-MiniLM-L6-v2, 384D)
+     ├── ChromaDB Vector Search          (cosine similarity)
+     ├── Fuzzy C-Means Clustering        (k=15, m=2.0)
+     └── Cluster-Indexed Semantic Cache  (threshold=0.85)
 ```
 
 ### Component Responsibilities
 
-**Flask UI**
-
-- Provides a web interface for interacting with the API
-- Allows users to run POST, GET, and DELETE requests
-- Displays raw JSON responses
-
-**FastAPI Backend**
-
-- Embeds queries
-- Performs semantic search
-- Handles cache lookups
-- Returns ranked documents
-
-## Running the Application
-
-You can run Adisearch in two ways:
-
-1️⃣ Local development
-2️⃣ Docker container
+| Component           | Role                                                                              |
+| :------------------ | :-------------------------------------------------------------------------------- |
+| **Flask Web UI**    | Browser interface for submitting queries, viewing results, and managing the cache |
+| **FastAPI Backend** | Embedding, vector search, cache lookup, and ranked document retrieval             |
+| **ChromaDB**        | Persistent cosine-space vector store for document embeddings                      |
+| **Fuzzy C-Means**   | Soft document clustering, enabling multi-topic membership and O(N/K) cache lookup |
+| **Semantic Cache**  | Paraphrase-aware cache that serves results for semantically equivalent queries    |
 
 ---
 
-### Option 1 — Run locally
+## 🛠 Tech Stack
 
-#### 1. Create virtual environment
+| Component            | Technology              | Description                                       |
+| :------------------- | :---------------------- | :------------------------------------------------ |
+| **Embeddings**       | `all-MiniLM-L6-v2`      | 384D sentence embeddings, L2-normalized           |
+| **Vector DB**        | ChromaDB                | Persistent cosine-space document store            |
+| **Clustering**       | Fuzzy C-Means           | Soft cluster membership across 15 clusters        |
+| **Cache**            | Custom semantic cache   | Cluster-indexed, cosine similarity threshold 0.85 |
+| **Backend**          | FastAPI                 | REST API for search and cache management          |
+| **Frontend**         | Flask + Jinja2          | Lightweight web UI for API interaction            |
+| **Containerization** | Docker + Docker Compose | Multi-service orchestration                       |
+
+---
+
+## 📂 Project Structure
+
+```
+Adisearch/
+├── data/                     ← 20 Newsgroups corpus (download separately)
+│   ├── 20_newsgroups/
+│   └── mini_newsgroups/
+│
+├── notebooks/                ← Exploration and clustering analysis
+│
+├── src/                      ← Core modules
+│   ├── embedder.py           ← Sentence embedding wrapper
+│   ├── vector_store.py       ← ChromaDB interface
+│   ├── fuzzy_clustering.py   ← Fuzzy C-Means logic
+│   ├── semantic_cache.py     ← Cluster-indexed cache
+│   └── search_engine.py      ← Query orchestration
+│
+├── api/                      ← FastAPI backend
+│   └── main.py
+│
+├── web/                      ← Flask frontend
+│   ├── app.py
+│   └── templates/
+│       └── index.html
+│
+├── scripts/                  ← One-time data processing
+│   ├── ingest.py             ← Dataset ingestion into ChromaDB
+│   └── cluster.py            ← Fuzzy clustering pipeline
+│
+├── tests/                    ← Unit tests
+│
+├── chroma_db/                ← Persistent vector database
+├── cache_data/               ← Persistent semantic cache
+├── cluster_model/            ← Saved clustering pipeline
+│
+├── Dockerfile
+├── docker-compose.yml
+├── start.sh
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 📥 Dataset
+
+The corpus is based on the classic **20 Newsgroups** dataset, provided as part of this project.
+
+📥 **[Download data.zip from Google Drive](https://drive.google.com/drive/folders/1TjK4mT0mAMZjubitk87GpzoTwVeJz7dc?usp=drive_link)**
+
+After downloading:
+
+1. Extract `data.zip`
+2. Place the resulting `data/` folder in the project root
+
+```
+Adisearch/
+└── data/          ← paste extracted folder here
+    ├── 20_newsgroups/
+    └── mini_newsgroups/
+```
+
+> **Note:** The `data/` folder is excluded from this repository. It must be downloaded separately before running any scripts.
+
+---
+
+## 🚀 Running the Application
+
+You can run Adisearch in two ways:
+
+### Option 1 — Local Development
+
+#### 1. Create a virtual environment
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 ```
 
 #### 2. Install dependencies
@@ -136,95 +163,83 @@ python scripts/ingest.py
 python scripts/cluster.py
 ```
 
-#### 5. Start backend API
+#### 5. Start the backend API
 
 ```bash
 uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
-#### 6. Start the web interface
+#### 6. Start the web UI
 
 ```bash
 python web/app.py
 ```
 
-#### 7. Open the UI
-
-```
-http://localhost:5000
-```
+Open **[http://localhost:5000](http://localhost:5000)** in your browser.
 
 ---
 
-### Option 2 — Run with Docker
+### Option 2 — Docker
 
-Build and start the containers:
+Build and launch both services with a single command:
 
 ```bash
 docker compose up --build
 ```
 
-This automatically launches:
+| Service | URL                   |
+| :------ | :-------------------- |
+| Web UI  | http://localhost:5000 |
+| API     | http://localhost:8000 |
 
-- FastAPI backend → **port 8000**
-- Flask web UI → **port 5000**
-
-Open the web interface:
-
-```
-http://localhost:5000
-```
-
-To stop the containers:
+Stop all services:
 
 ```bash
 docker compose down
 ```
 
-## Web Interface
+Persistent volumes ensure that `chroma_db/`, `cache_data/`, and `cluster_model/` are retained across container restarts.
 
-A lightweight web interface is included for interacting with the API.
+---
+
+## 🌐 Web Interface
+
+A lightweight browser-based UI is included for interacting with the API without `curl`.
 
 **Features:**
 
 - Submit semantic search queries
-- View cache statistics
+- View ranked JSON results
+- Inspect cache hit/miss statistics
 - Flush the semantic cache
-- Display formatted JSON responses
 
 ### Supported Actions
 
-| Action      | Endpoint         |
-| ----------- | ---------------- |
-| Run Query   | POST /query      |
-| Cache Stats | GET /cache/stats |
-| Flush Cache | DELETE /cache    |
+| Action      | Method   | Endpoint       |
+| :---------- | :------- | :------------- |
+| Run Query   | `POST`   | `/query`       |
+| Cache Stats | `GET`    | `/cache/stats` |
+| Flush Cache | `DELETE` | `/cache`       |
 
-Example JSON query:
+---
 
-```json
-{
-  "query": "Space shuttle launch nasa mission"
-}
-```
+## 📡 API Reference
 
-## API Endpoints
+### `POST /query`
 
-### POST /query
-
-Runs semantic search.
+Runs semantic search over the document corpus.
 
 ```bash
 curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
-  -d '{"query": "Best graphics card for video games"}'
+  -d '{"query": "Space shuttle launch nasa mission"}'
 ```
 
-Response:
+**Response:**
 
 ```json
 {
-  "query": "...",
+  "query": "Space shuttle launch nasa mission",
   "cache_hit": false,
   "matched_query": null,
   "similarity_score": null,
@@ -235,15 +250,15 @@ Response:
 
 ---
 
-### GET /cache/stats
+### `GET /cache/stats`
 
-Returns cache statistics.
+Returns current cache performance statistics.
 
 ```bash
 curl http://localhost:8000/cache/stats
 ```
 
-Response:
+**Response:**
 
 ```json
 {
@@ -256,9 +271,9 @@ Response:
 
 ---
 
-### DELETE /cache
+### `DELETE /cache`
 
-Flushes the semantic cache.
+Flushes all entries from the semantic cache.
 
 ```bash
 curl -X DELETE http://localhost:8000/cache
@@ -266,97 +281,84 @@ curl -X DELETE http://localhost:8000/cache
 
 ---
 
-### GET / (health check)
+### `GET /`
+
+Health check endpoint.
 
 ```bash
 curl http://localhost:8000/
 ```
 
-## Architecture Overview
+---
 
-- **Embeddings**: `all-MiniLM-L6-v2` (384D, L2-normalized)
-- **Vector DB**: ChromaDB (persistent, cosine space)
-- **Clustering**: Fuzzy C-Means (k=15, m=2.0) on PCA-reduced embeddings
-- **Cache**: Custom cluster-indexed semantic cache (threshold=0.85)
+## 🧠 Semantic Cache
 
-See `notebooks/01_exploration_and_clustering.ipynb` for full analysis and visualizations.
+Traditional caches rely on exact key matches. Adisearch implements a **semantic cache** that recognizes paraphrased queries by comparing embeddings.
 
-## Semantic Cache
-
-Traditional caches rely on exact key matches. This project implements a **semantic cache** capable of recognizing paraphrased queries.
-
-Example:
+**Example:**
 
 ```
 Query 1: "Best graphics cards"
 Query 2: "Which video cards are good?"
 ```
 
-Although phrased differently, the queries share similar embeddings and are served from cache.
+Although phrased differently, both queries produce similar embeddings and the second is served directly from cache — no redundant vector search required.
 
 ### Cache Design
 
-- Cosine similarity comparison
-- Cluster-indexed lookup
-- Similarity threshold: **0.85**
+- **Cosine similarity** comparison between query embeddings
+- **Cluster-indexed lookup** — only entries within the same dominant cluster are compared
+- **Similarity threshold:** `0.85`
+- **Complexity:** O(N/K) vs O(N) for flat cache, where K = number of clusters
 
-Cluster indexing drastically reduces lookup cost for large caches — O(N/K) instead of O(N), where K is the number of clusters.
+---
 
-## Fuzzy Clustering
+## 🔵 Fuzzy Clustering
 
-Instead of assigning each document to a single cluster, this project uses **Fuzzy C-Means**, which allows documents to belong to multiple topics simultaneously.
+Unlike hard clustering, **Fuzzy C-Means** assigns each document a _membership distribution_ across all clusters — allowing multi-topic documents to be represented accurately.
 
-Example — a post from `talk.politics.guns` may receive membership in:
+**Example** — a post from `talk.politics.guns` may receive:
 
 ```
-Cluster 4 → politics
-Cluster 7 → firearms
+Cluster 4 → 0.71  (politics)
+Cluster 7 → 0.43  (firearms)
 ```
 
-Each document receives a **membership distribution** across all clusters. These memberships are also used to accelerate semantic cache lookup by narrowing the candidate search space.
+These memberships are used both for thematic analysis and to narrow the semantic cache search space, accelerating lookups for large caches.
 
-## Notes on Similarity Scores
+---
 
-The 20 Newsgroups dataset originates from Usenet posts written in the early 1990s. Because the corpus predates modern terminology, there is a natural vocabulary gap between contemporary queries and historical documents.
+## 📊 Notes on Similarity Scores
 
-| Modern Query Term | Corpus Terminology |
-| ----------------- | ------------------ |
-| GPU               | video card         |
-| PC                | workstation        |
-| online            | network / usenet   |
+The 20 Newsgroups corpus consists of Usenet posts from the **early 1990s**. A natural vocabulary gap exists between modern query language and the historical documents.
 
-As a result, cosine similarity scores may appear lower (typically ~0.45–0.60) despite the retrieved documents being topically relevant. The semantic embedding model successfully bridges this vocabulary gap, retrieving documents about the correct topic even when exact terminology differs.
+| Modern Query Term | Corpus Equivalent |
+| :---------------- | :---------------- |
+| GPU               | video card        |
+| PC                | workstation       |
+| online            | network / usenet  |
+| smartphone        | handheld device   |
 
-## Docker Deployment
+Cosine similarity scores typically fall in the **0.45–0.60** range despite topical relevance being high. The sentence embedding model (`all-MiniLM-L6-v2`) successfully bridges this gap through semantic representation rather than surface-level token matching.
 
-The project includes Docker support for running the full system in a containerized environment.
+---
 
-The Docker setup runs both:
+## 📓 Notebooks
 
-- **FastAPI backend** (port 8000)
-- **Flask web interface** (port 5000)
+See `notebooks/01_exploration_and_clustering.ipynb` for:
 
-### Start the system
+- Corpus exploration and statistics
+- PCA dimensionality reduction
+- Fuzzy C-Means cluster visualizations
+- Cache performance analysis
 
-```bash
-docker compose up --build
-```
+---
 
-### Stop the system
+## 📜 License
 
-```bash
-docker compose down
-```
+This project is licensed under the **MIT License**.  
+© 2024 Aditya Vasudev K
 
-### Services exposed
+---
 
-| Service | URL                   |
-| ------- | --------------------- |
-| Web UI  | http://localhost:5000 |
-| API     | http://localhost:8000 |
-
-Persistent volumes ensure that the following data is retained across container restarts:
-
-- `chroma_db/` → vector database
-- `cache_data/` → semantic cache
-- `cluster_model/` → clustering model
+<p align="center">Built with ❤️ using FastAPI · ChromaDB · HuggingFace · Docker</p>
