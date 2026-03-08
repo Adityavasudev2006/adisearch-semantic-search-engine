@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+ai_env/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dataset (download separately)
+data/
+
+# Vector DB
+chroma_db/
+
+# Cache
+cache_data/
+
+# Saved clustering model
+cluster_model/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+*.tar
+
+# Python build
+build/
+dist/
+*.egg-info/

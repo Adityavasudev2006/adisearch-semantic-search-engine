@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  adisearch:
+    build: .
+    ports:
+      - "8000:8000"
+      - "5000:5000"
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./cache_data:/app/cache_data
+      - ./cluster_model:/app/cluster_model
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

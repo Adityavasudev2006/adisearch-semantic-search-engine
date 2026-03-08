@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adisearch Console · Pro</title>
+    <!-- Tailwind + Inter font + icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <style>
+      body {
+        font-family: "Inter", monospace;
+        background: #0a0a0f;
+      }
+      .glass-card {
+        background: rgba(20, 20, 30, 0.7);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 255, 200, 0.15);
+      }
+      .glow {
+        box-shadow: 0 0 15px rgba(0, 255, 200, 0.2);
+      }
+      pre {
+        background: #0d0d14;
+        border: 1px solid #2a2a3a;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        overflow-x: auto;
+        color: #c0c0e0;
+      }
+      .json-key {
+        color: #ff79c6;
+      }
+      .json-string {
+        color: #50fa7b;
+      }
+      .json-number {
+        color: #bd93f9;
+      }
+      .json-boolean {
+        color: #ffb86c;
+      }
+
+      /* toast animation */
+      .toast {
+        transition:
+          transform 0.3s ease,
+          opacity 0.3s ease;
+      }
+      .toast.hidden {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body class="text-gray-200 p-6 lg:p-8 relative">
+    <!-- Toast container (fixed at top) -->
+    <div
+      id="toastContainer"
+      class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center space-y-2 pointer-events-none"
+    >
+      <!-- toasts will be injected here -->
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <span class="text-4xl text-[#00ffc8]">⚡</span>
+          <h1 class="text-3xl font-light tracking-wider text-[#00ffc8]">
+            Adisearch<span class="font-bold"> Console</span>
+          </h1>
+        </div>
+        <span
+          class="text-sm bg-[#1a1a28] px-4 py-2 rounded-full border border-[#00ffc8]/30"
+          >API backend: localhost:8000</span
+        >
+      </div>
+
+      <!-- Cache Stats Dashboard (updated via GET and query responses) -->
+      <div class="glass-card rounded-2xl p-6 glow">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold flex items-center gap-2">
+            <i class="fas fa-database text-[#00ffc8]"></i> Cache Analytics
+          </h2>
+          <button
+            id="refreshStatsBtn"
+            onclick="getStats()"
+            class="bg-[#1e1e2e] hover:bg-[#2a2a3a] text-white px-5 py-2 rounded-xl text-sm flex items-center gap-2 transition border border-[#00ffc8]/30"
+          >
+            <i class="fas fa-sync-alt"></i> Refresh stats
+          </button>
+        </div>
+        <div
+          id="cacheStats"
+          class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center"
+        >
+          <!-- filled dynamically -->
+          <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20">
+            <div class="text-sm text-gray-400">hits</div>
+            <div class="text-3xl font-mono text-[#00ffc8]">-</div>
+          </div>
+          <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20">
+            <div class="text-sm text-gray-400">misses</div>
+            <div class="text-3xl font-mono text-[#00ffc8]">-</div>
+          </div>
+          <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20">
+            <div class="text-sm text-gray-400">size</div>
+            <div class="text-3xl font-mono text-[#00ffc8]">-</div>
+          </div>
+          <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20">
+            <div class="text-sm text-gray-400">hit rate</div>
+            <div class="text-3xl font-mono text-[#00ffc8]">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Query Card -->
+      <div class="glass-card rounded-2xl p-6 glow">
+        <div
+          class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5"
+        >
+          <h2 class="text-xl font-semibold flex items-center gap-2">
+            <i class="fas fa-search text-[#00ffc8]"></i> Query editor
+          </h2>
+          <div class="flex flex-wrap gap-2">
+            <button
+              onclick="insertExample()"
+              class="bg-[#1e2a2a] hover:bg-[#2a3a3a] text-[#a0f0e0] px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition"
+            >
+              <i class="fas fa-file-alt"></i> Example
+            </button>
+            <button
+              onclick="clearQuery()"
+              class="bg-[#2a1e2a] hover:bg-[#3a2a3a] text-[#f0a0e0] px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition"
+            >
+              <i class="fas fa-eraser"></i> Clear
+            </button>
+            <button
+              onclick="formatQuery()"
+              class="bg-[#1e1e2e] hover:bg-[#2a2a3a] text-gray-300 px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition"
+            >
+              <i class="fas fa-indent"></i> Format
+            </button>
+          </div>
+        </div>
+
+        <textarea
+          id="query"
+          class="w-full h-36 bg-[#0b0b14] border border-[#00ffc8]/30 rounded-xl p-4 font-mono text-sm text-[#d0d0f0] focus:outline-none focus:border-[#00ffc8] transition resize-y"
+        >
+{
+  "query": "Space shuttle launch nasa mission"
+}</textarea
+        >
+
+        <div class="flex flex-wrap items-center justify-between gap-4 mt-4">
+          <div class="flex gap-3">
+            <button
+              onclick="runQuery()"
+              id="runBtn"
+              class="bg-[#00ffc8] hover:bg-[#00ddb0] text-black font-semibold px-8 py-3 rounded-xl flex items-center gap-2 transition shadow-lg"
+            >
+              <i class="fas fa-paper-plane"></i> Execute query
+            </button>
+            <button
+              onclick="deleteCache()"
+              class="bg-transparent border border-red-500/50 hover:bg-red-500/10 text-red-400 px-5 py-3 rounded-xl flex items-center gap-2 transition"
+            >
+              <i class="fas fa-trash-alt"></i> Flush cache
+            </button>
+          </div>
+          <span id="requestTime" class="text-xs text-gray-500 font-mono"></span>
+        </div>
+      </div>
+
+      <!-- Response Panel -->
+      <div class="glass-card rounded-2xl p-6 glow">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xl font-semibold flex items-center gap-2">
+            <i class="fas fa-code text-[#00ffc8]"></i> Response
+          </h2>
+          <div class="flex gap-2">
+            <button
+              onclick="copyResponse()"
+              class="bg-[#1e1e2e] hover:bg-[#2a2a3a] text-gray-300 px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition"
+            >
+              <i class="fas fa-copy"></i> Copy
+            </button>
+            <button
+              onclick="clearResponse()"
+              class="bg-[#1e1e2e] hover:bg-[#2a2a3a] text-gray-300 px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition"
+            >
+              <i class="fas fa-broom"></i> Clear
+            </button>
+          </div>
+        </div>
+        <pre
+          id="output"
+          class="whitespace-pre-wrap max-h-96 overflow-auto"
+        ><span class="text-gray-500">— waiting for request —</span></pre>
+        <div
+          id="loadingIndicator"
+          class="hidden flex items-center gap-2 text-[#00ffc8] mt-2"
+        >
+          <i class="fas fa-circle-notch fa-spin"></i> processing...
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ========== TOAST NOTIFICATION SYSTEM ==========
+      function showToast(message, type = "info", duration = 4000) {
+        const container = document.getElementById("toastContainer");
+        const toast = document.createElement("div");
+        toast.className = `toast pointer-events-auto max-w-md w-full bg-[#1a1a28] border border-[#00ffc8]/30 rounded-xl shadow-2xl p-4 flex items-start gap-3 transform transition-all duration-300 mb-2`;
+        if (type === "success")
+          toast.classList.add("border-green-500/50", "bg-green-950/20");
+        else if (type === "error")
+          toast.classList.add("border-red-500/50", "bg-red-950/20");
+        else if (type === "warning")
+          toast.classList.add("border-yellow-500/50", "bg-yellow-950/20");
+
+        const iconMap = {
+          success: '<i class="fas fa-check-circle text-green-400 text-xl"></i>',
+          error:
+            '<i class="fas fa-exclamation-circle text-red-400 text-xl"></i>',
+          warning:
+            '<i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>',
+          info: '<i class="fas fa-info-circle text-[#00ffc8] text-xl"></i>',
+        };
+
+        toast.innerHTML = `
+      <div class="flex-shrink-0">${iconMap[type] || iconMap.info}</div>
+      <div class="flex-1 text-sm text-gray-200">${message}</div>
+      <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-white">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+
+        container.appendChild(toast);
+
+        // auto remove
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.classList.add("hidden");
+            setTimeout(() => toast.remove(), 300);
+          }
+        }, duration);
+      }
+
+      // ========== CACHE STATS UPDATE ==========
+      function updateStatsCards(data) {
+        const statsDiv = document.getElementById("cacheStats");
+        // extract fields with fallback
+        const hits = data.hits ?? data.hit_count ?? "-";
+        const misses = data.misses ?? data.miss_count ?? "-";
+        const size = data.size ?? data.total_entries ?? data.entries ?? "-";
+        let hitRate = data.hit_rate ?? "-";
+        if (
+          hitRate === "-" &&
+          typeof hits === "number" &&
+          typeof misses === "number" &&
+          hits + misses > 0
+        ) {
+          hitRate = ((hits / (hits + misses)) * 100).toFixed(1) + "%";
+        } else if (typeof hitRate === "number") {
+          hitRate = hitRate + "%";
+        }
+        statsDiv.innerHTML = `
+      <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20"><div class="text-sm text-gray-400">hits</div><div class="text-3xl font-mono text-[#00ffc8]">${hits}</div></div>
+      <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20"><div class="text-sm text-gray-400">misses</div><div class="text-3xl font-mono text-[#00ffc8]">${misses}</div></div>
+      <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20"><div class="text-sm text-gray-400">size</div><div class="text-3xl font-mono text-[#00ffc8]">${size}</div></div>
+      <div class="bg-[#14141f] rounded-xl p-4 border border-[#00ffc8]/20"><div class="text-sm text-gray-400">hit rate</div><div class="text-3xl font-mono text-[#00ffc8]">${hitRate}</div></div>
+    `;
+      }
+
+      // ========== HELPER FUNCTIONS ==========
+      function syntaxHighlight(json) {
+        if (typeof json !== "string") json = JSON.stringify(json, null, 2);
+        json = json
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        return json.replace(
+          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+          function (match) {
+            let cls = "json-number";
+            if (/^"/.test(match)) {
+              if (/:$/.test(match)) cls = "json-key";
+              else cls = "json-string";
+            } else if (/true|false/.test(match)) cls = "json-boolean";
+            else if (/null/.test(match)) cls = "json-boolean";
+            return '<span class="' + cls + '">' + match + "</span>";
+          },
+        );
+      }
+
+      function displayOutput(data, timeMs = null) {
+        const out = document.getElementById("output");
+        if (data && typeof data === "object") {
+          out.innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+        } else {
+          out.textContent = data;
+        }
+        if (timeMs !== null) {
+          document.getElementById("requestTime").innerText = `⏱️ ${timeMs} ms`;
+        }
+      }
+
+      function showLoading(show) {
+        document
+          .getElementById("loadingIndicator")
+          .classList.toggle("hidden", !show);
+      }
+
+      // ========== API CALLS ==========
+      async function runQuery() {
+        const rawQuery = document.getElementById("query").value;
+        let jsonBody;
+        try {
+          jsonBody = JSON.parse(rawQuery);
+        } catch (e) {
+          displayOutput("❌ Invalid JSON in query editor");
+          showToast("Invalid JSON", "error");
+          return;
+        }
+
+        showLoading(true);
+        const start = performance.now();
+        try {
+          const res = await fetch("/query", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(jsonBody),
+          });
+          const data = await res.json();
+          const time = Math.round(performance.now() - start);
+          displayOutput(data, time);
+
+          // Update stats cards if the response contains cache stats
+          if (
+            data &&
+            (data.hit_count !== undefined ||
+              data.hits !== undefined ||
+              data.miss_count !== undefined ||
+              data.total_entries !== undefined)
+          ) {
+            updateStatsCards(data);
+            showToast("Stats updated from query response", "success", 2000);
+          } else {
+            // Optionally fetch fresh stats if response doesn't include them
+            // await getStats(false); // uncomment if you always want fresh stats after query
+          }
+        } catch (err) {
+          displayOutput("❌ Network / server error: " + err.message);
+          showToast("Query failed: " + err.message, "error");
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      async function getStats(showToastNotification = true) {
+        showLoading(true);
+        const start = performance.now();
+        try {
+          const res = await fetch("/cache/stats");
+          const data = await res.json();
+          const time = Math.round(performance.now() - start);
+          displayOutput(data, time);
+          updateStatsCards(data);
+          if (showToastNotification)
+            showToast("Cache stats refreshed", "info", 2000);
+        } catch (err) {
+          displayOutput("❌ Failed to fetch cache stats: " + err.message);
+          showToast("Failed to fetch stats", "error");
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      async function deleteCache() {
+        if (!confirm("Flush entire cache? This action cannot be undone."))
+          return;
+        showLoading(true);
+        const start = performance.now();
+        try {
+          const res = await fetch("/cache", { method: "DELETE" });
+          const data = await res.json();
+          const time = Math.round(performance.now() - start);
+          displayOutput(data, time);
+          showToast("Cache flushed successfully", "success", 3000);
+          // refresh stats after flush
+          await getStats(false); // silent update
+        } catch (err) {
+          displayOutput("❌ Error flushing cache: " + err.message);
+          showToast("Failed to flush cache", "error");
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      // ========== UI HELPER ==========
+      function insertExample() {
+        document.getElementById("query").value = JSON.stringify(
+          { query: "Apollo 11 lunar module", max_results: 5 },
+          null,
+          2,
+        );
+      }
+
+      function clearQuery() {
+        document.getElementById("query").value = '{\n  "query": ""\n}';
+      }
+
+      function formatQuery() {
+        const el = document.getElementById("query");
+        try {
+          const obj = JSON.parse(el.value);
+          el.value = JSON.stringify(obj, null, 2);
+        } catch (e) {
+          showToast("Cannot format invalid JSON", "warning");
+        }
+      }
+
+      function copyResponse() {
+        const out = document.getElementById("output").innerText;
+        navigator.clipboard
+          .writeText(out)
+          .then(() => {
+            showToast("Response copied to clipboard", "success", 2000);
+          })
+          .catch(() => showToast("Failed to copy", "error"));
+      }
+
+      function clearResponse() {
+        document.getElementById("output").innerHTML =
+          '<span class="text-gray-500">— cleared —</span>';
+        document.getElementById("requestTime").innerText = "";
+      }
+
+      // initial load of stats
+      window.addEventListener("load", () => {
+        getStats(false); // silent load
+      });
+    </script>
+  </body>
+</html>
