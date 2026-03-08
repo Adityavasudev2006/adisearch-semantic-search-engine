@@ -169,10 +169,10 @@ python scripts/cluster.py
 uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
-#### 6. Start the web UI
+#### 6. Open the Web UI
 
 ```bash
-python web/app.py
+http://localhost:5000
 ```
 
 Open **[http://localhost:5000](http://localhost:5000)** in your browser.
