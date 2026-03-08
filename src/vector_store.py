@@ -1,18 +1,4 @@
-"""
-vector_store.py - ChromaDB vector store wrapper.
-
-Why ChromaDB over Pinecone/Weaviate/FAISS:
-- FAISS is faster for pure ANN search but has no metadata storage or persistence
-- Pinecone/Weaviate require external services (violates the lightweight requirement)
-- ChromaDB runs in-process, persists to disk, and supports metadata filtering
-- The metadata filtering is KEY for our cluster-aware cache: we can query
-  "find similar vectors ONLY within cluster X" — reducing search space dramatically
-
-Collection design:
-- One collection for the entire corpus
-- Each document stored with: embedding + metadata(doc_id, category, cluster_id, cluster_probs)
-- cluster_probs stored as JSON string (ChromaDB metadata must be primitives)
-"""
+# vector_store.py - ChromaDB vector store wrapper.
 
 import json
 import numpy as np
@@ -77,11 +63,7 @@ class VectorStore:
         n_results: int = 10,
         where: Optional[Dict] = None
     ) -> Dict:
-        """
-        Query for nearest neighbors.
-        where: optional metadata filter e.g. {"dominant_cluster": 3}
-        Returns ChromaDB result dict with ids, distances, documents, metadatas.
-        """
+
         kwargs = {
             "query_embeddings": [query_embedding.tolist()],
             "n_results": n_results,

@@ -1,23 +1,6 @@
-"""
-data_loader.py - Load and clean the 20 Newsgroups corpus.
+# data_loader.py - Load and clean the 20 Newsgroups corpus.
 
-Preprocessing decisions:
-1. STRIP EMAIL HEADERS: Lines like "From:", "Subject:", "Organization:", "Lines:"
-   are metadata noise — they don't reflect topical content and would corrupt embeddings.
-   Exception: We keep "Subject:" body text as it's often a topical summary.
 
-2. STRIP QUOTED REPLIES: Lines starting with ">" are quoted text from other articles.
-   Including them would double-count content and blur cluster boundaries.
-
-3. MINIMUM LENGTH FILTER: We discard documents with fewer than 50 tokens after cleaning.
-   Short posts are often "me too" or signature-only and carry no semantic signal.
-
-4. DEDUPLICATE: Crossposted articles (~4% per dataset docs) appear in multiple newsgroups.
-   We deduplicate on a hash of the cleaned body to avoid inflating cluster sizes.
-
-5. WE DO NOT LOWERCASE: Sentence-transformers handle casing internally; lowercasing
-   before tokenization can lose acronym meaning (e.g., "NASA" vs "nasa").
-"""
 
 import os
 import re
@@ -39,10 +22,6 @@ HEADER_FIELDS_TO_STRIP = {
 
 
 def clean_article(raw_text: str) -> str:
-    """
-    Clean a single raw newsgroup article.
-    Returns cleaned body text, or empty string if nothing remains.
-    """
     lines = raw_text.split('\n')
     cleaned_lines = []
     in_header = True
@@ -101,15 +80,6 @@ def load_corpus(
     min_tokens: int = 50,
     max_docs_per_category: Optional[int] = None
 ) -> List[Dict]:
-    """
-    Load all articles from the newsgroups directory structure.
-    
-    Returns list of dicts with keys:
-        - doc_id: str (filename)
-        - category: str (newsgroup name)
-        - text: str (cleaned body)
-        - raw_text: str (original)
-    """
     if data_path is None:
         data_path = DATA_DIR / ("mini_newsgroups" if USE_MINI else "20_newsgroups")
 

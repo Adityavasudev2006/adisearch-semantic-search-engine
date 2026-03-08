@@ -1,71 +1,4 @@
-"""
-semantic_cache.py - Handbuilt semantic cache. NO Redis, NO caching libraries.
-
-ARCHITECTURE DESIGN:
-
-A traditional exact-match cache (like Python's @lru_cache) breaks the moment
-a user rephrases a query. "What are GPU prices?" and "How much does a graphics
-card cost?" would be two different cache misses.
-
-Our semantic cache works differently:
-
-DATA STRUCTURE:
-    We use a two-level lookup structure:
-    
-    1. CLUSTER INDEX (Dict[int, List[int]])
-       cluster_id → list of cache entry indices
-       This is the key innovation: instead of comparing a new query against
-       ALL cache entries, we first find which cluster(s) it belongs to,
-       then only compare against entries in those clusters.
-       
-       As the cache grows to N entries, naive lookup is O(N).
-       With cluster indexing, it's O(N/K) where K = number of clusters.
-       For K=15 clusters and N=10000 cache entries, that's 15x faster lookup.
-    
-    2. ENTRY STORE (List[CacheEntry])
-       Sequential list of all cache entries with full metadata.
-
-CACHE LOOKUP ALGORITHM:
-    1. Embed the incoming query (384D vector)
-    2. Get its cluster membership vector (15D soft assignment)
-    3. Find its dominant cluster (and secondary if membership > 0.3)
-    4. Retrieve all cache entries in those clusters
-    5. Compute cosine similarity between query and each candidate
-    6. If max similarity ≥ THRESHOLD → cache hit, return stored result
-    7. Else → cache miss, compute result, store it
-
-THE CRITICAL TUNABLE — SIMILARITY THRESHOLD:
-    This is the most important design decision. We explore:
-    
-    threshold=0.70: Very permissive. Catches paraphrases well but can return
-                    wrong results for queries in semantically dense regions.
-                    "What is Python?" might match "What is a snake?" at 0.70.
-    
-    threshold=0.80: Good for broad topical queries. Works well for newsgroup
-                    categories (politics, sports, tech) where many queries
-                    have similar intent.
-    
-    threshold=0.85: Our production default. Balances hit rate (~35-45%) with
-                    precision. "Tell me about atheism" correctly matches 
-                    "Discussion of religious beliefs" but not "Tell me about 
-                    athletes".
-    
-    threshold=0.90: Very precise. Near-duplicate queries only. Hit rate drops
-                    to ~15-20% but results are always correct.
-    
-    threshold=0.95: Effectively only exact-ish matches. Useful for 
-                    demonstrating the threshold effect but not practical.
-    
-    The interesting insight: threshold doesn't just affect hit rate —
-    it defines what "similar" MEANS in your system. At 0.85, you're 
-    building a system that understands paraphrase. At 0.95, you're 
-    building near-duplicate detection. These are different products.
-
-PERSISTENCE:
-    Cache entries are persisted to disk as JSON after each write.
-    On startup, the cache is loaded from disk.
-    This means the cache survives API restarts.
-"""
+# semantic_cache.py - Handbuilt semantic cache. NO Redis, NO caching libraries.
 
 import json
 import time
@@ -90,10 +23,6 @@ class CacheEntry:
 
 
 class SemanticCache:
-    """
-    Cluster-indexed semantic cache with cosine similarity lookup.
-    Built entirely from scratch — no Redis, no caching libraries.
-    """
     
     def __init__(
         self,
@@ -120,25 +49,9 @@ class SemanticCache:
         self._load()
     
     def _cosine_similarity(self, a: np.ndarray, b: np.ndarray) -> float:
-        """
-        Cosine similarity between two vectors.
-        Since our embeddings are L2-normalized (done in embedder.py),
-        this is just the dot product — O(d) and very fast.
-        """
         return float(np.dot(a, b))
     
     def _get_candidate_indices(self, membership_vector: np.ndarray, secondary_threshold: float = 0.05) -> List[int]:
-        """
-        Get cache entry indices to check based on cluster membership.
-        
-        We check the dominant cluster PLUS any cluster with membership > secondary_threshold.
-        This handles boundary documents that sit between clusters.
-        
-        secondary_threshold=0.05 means: "if this query has 5%+ membership in
-        any cluster, search that cluster's cache entries."
-        This is a deliberate tradeoff — more candidates = more comparisons but
-        fewer false misses for cross-topic queries.
-        """
         candidate_indices = set()
         
         for cluster_id, membership in enumerate(membership_vector):
@@ -156,15 +69,6 @@ class SemanticCache:
         query_embedding: np.ndarray,
         membership_vector: np.ndarray
     ) -> Optional[Tuple[CacheEntry, float]]:
-        """
-        Look up a query in the cache.
-        
-        Returns (CacheEntry, similarity_score) on hit, None on miss.
-        
-        The two-phase lookup:
-        Phase 1: Cluster filtering — O(N/K) instead of O(N)
-        Phase 2: Cosine similarity — only on cluster-filtered candidates
-        """
         candidate_indices = self._get_candidate_indices(membership_vector)
         
         if not candidate_indices:
@@ -199,10 +103,6 @@ class SemanticCache:
         membership_vector: np.ndarray,
         result: Any
     ) -> CacheEntry:
-        """
-        Store a new query+result in the cache.
-        Updates the cluster index and persists to disk.
-        """
         dominant_cluster = int(np.argmax(membership_vector))
         
         entry = CacheEntry(

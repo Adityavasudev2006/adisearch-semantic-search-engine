@@ -1,45 +1,5 @@
-"""
-fuzzy_clustering.py - Fuzzy C-Means clustering on document embeddings.
+# fuzzy_clustering.py - Fuzzy C-Means clustering on document embeddings.
 
-WHY FUZZY CLUSTERING (not K-Means, not DBSCAN, not LDA):
-
-1. K-Means gives hard assignments. A post about gun legislation gets assigned to
-   EITHER politics OR firearms. That's wrong — it belongs to both. Fuzzy C-Means
-   gives a probability distribution over all clusters per document.
-
-2. DBSCAN finds noise points — for a cache system, we can't have uncacheable
-   documents. Every document needs cluster membership.
-
-3. LDA is topic modeling on word counts. We have dense embeddings from a neural
-   model that already captures semantics far better than bag-of-words.
-
-4. Gaussian Mixture Models (GMMs) are theoretically similar but harder to tune
-   at 384 dimensions due to covariance matrix instability.
-
-FUZZY C-MEANS algorithm:
-- Minimizes: J = Σᵢ Σⱼ uᵢⱼᵐ ||xᵢ - cⱼ||²
-  where uᵢⱼ = membership of point i in cluster j, m = fuzziness exponent
-- m=1 → hard clustering; m→∞ → equal membership everywhere
-- m=2 is the standard choice (supported by literature)
-- Membership update: uᵢⱼ = 1 / Σₖ (||xᵢ-cⱼ|| / ||xᵢ-cₖ||)^(2/(m-1))
-
-CLUSTER COUNT JUSTIFICATION (N=15):
-- The 20 raw newsgroups have known overlaps:
-  * comp.sys.ibm.pc.hardware + comp.sys.mac.hardware + comp.os.ms-windows.misc
-    → these three merge into ~1-2 "computer hardware/software" clusters
-  * talk.politics.* (3 groups) overlap heavily
-  * sci.* (4 groups) have genuine cross-talk
-- Elbow method on inertia + silhouette score peak both suggest 12-16
-- We choose 15 as it preserves enough granularity for the cache to be useful
-  (too few clusters = cache searches are less targeted)
-
-DIM REDUCTION FOR CLUSTERING:
-We reduce 384→50 dims via PCA before clustering.
-- Curse of dimensionality: distance metrics become meaningless in 384D
-- PCA to 50D retains ~85% of variance while making cluster geometry meaningful
-- We store original 384D embeddings in ChromaDB for similarity search
-  (full dims needed for precise nearest-neighbor lookup)
-"""
 
 import numpy as np
 import json
@@ -53,11 +13,6 @@ from src.config import N_CLUSTERS, FUZZY_M
 
 
 class FuzzyCMeans:
-    """
-    Pure numpy implementation of Fuzzy C-Means clustering.
-    Scikit-learn doesn't include FCM; we implement it from scratch
-    to have full control and understanding.
-    """
     
     def __init__(self, n_clusters: int = N_CLUSTERS, m: float = FUZZY_M,
                  max_iter: int = 150, tol: float = 1e-4, random_state: int = 42):

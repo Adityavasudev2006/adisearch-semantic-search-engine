@@ -1,13 +1,12 @@
-"""
-scripts/ingest.py - One-time script to embed the corpus and store in ChromaDB.
-Run this FIRST before anything else.
+# scripts/ingest.py - One-time script to embed the corpus and store in ChromaDB.
 
-Usage: python scripts/ingest.py
-"""
-
-import pysqlite3
 import sys
-sys.modules["sqlite3"] = pysqlite3
+import platform
+
+# Only use pysqlite3 on non-Windows systems
+if platform.system() != "Windows":
+    import pysqlite3
+    sys.modules["sqlite3"] = pysqlite3
 
 sys.path.insert(0, '.')
 import numpy as np

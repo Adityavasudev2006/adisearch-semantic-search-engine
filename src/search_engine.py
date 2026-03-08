@@ -1,7 +1,4 @@
-"""
-search_engine.py - Ties embedding + vector store + cache together.
-This is the core query execution pipeline.
-"""
+# search_engine.py - Ties embedding + vector store + cache together.
 
 import numpy as np
 from typing import Dict, List, Any, Optional
