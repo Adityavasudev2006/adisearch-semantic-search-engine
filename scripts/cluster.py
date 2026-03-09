@@ -1,9 +1,4 @@
-"""
-scripts/cluster.py - Run fuzzy clustering on the embedded corpus.
-Run this AFTER ingest.py.
-
-Usage: python scripts/cluster.py
-"""
+# scripts/cluster.py - Run fuzzy clustering on the embedded corpus.
 
 import sys
 sys.path.insert(0, '.')
