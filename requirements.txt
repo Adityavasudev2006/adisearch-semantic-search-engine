@@ -16,6 +16,10 @@ torch==2.3.0
 chromadb==0.5.0
 pysqlite3-binary==0.5.3; platform_system != "Windows"
 
+# ONNX Runtime (needed by ChromaDB)
+onnxruntime==1.16.3; platform_system == "Windows"
+onnxruntime; platform_system != "Windows"
+
 # Clustering / ML Utilities
 scikit-learn==1.4.2
 numpy==1.26.4
