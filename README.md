@@ -298,8 +298,8 @@ Traditional caches rely on exact key matches. Adisearch implements a **semantic 
 **Example:**
 
 ```
-Query 1: "Best graphics cards"
-Query 2: "Which video cards are good?"
+Query 1: "Space shuttle launch nasa mission"
+Query 2: "Space shuttle launch by nasa"
 ```
 
 Although phrased differently, both queries produce similar embeddings and the second is served directly from cache — no redundant vector search required.
